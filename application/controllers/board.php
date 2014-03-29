@@ -13,7 +13,6 @@ class Board extends CI_Controller {
     		
     		if (!isset($_SESSION['user']))
    			redirect('account/loginForm', 'refresh'); //Then we redirect to the index page again
- 	    	
 	    	return call_user_func_array(array($this, $method), $params);
     }
     
@@ -54,7 +53,16 @@ class Board extends CI_Controller {
 	    			$data['status'] = 'waiting';
 	    			break;
 	    	}
+		$game_board = array();
+		$game_board_row = array();
+		for($i = 0; $i < 7; $i = $i + 1){
+			for($j = 0; $j < 6; $j = $j + 1){				
+				$game_board_row[$j] = 0; 
+			}
+			array_push($game_board, $game_board_row);
+		}
 		
+		$data['game_board'] = $game_board;		
 		$this->load->view('match/board',$data);
     }
 
@@ -78,7 +86,7 @@ class Board extends CI_Controller {
  			$match = $this->match_model->get($user->match_id);			
  			//Get the msg
  			$msg = $this->input->post('msg');
- 			
+
  			if ($match->user1_id == $user->id)  {
 				//Clear msg in database
  				$msg = $match->u1_msg == ''? $msg :  $match->u1_msg . "\n" . $msg;
@@ -89,6 +97,7 @@ class Board extends CI_Controller {
  				$msg = $match->u2_msg == ''? $msg :  $match->u2_msg . "\n" . $msg;
  				$this->match_model->updateMsgU2($match->id, $msg);
  			}
+			
  			//create json data "status: success", and send it to view			! We might use json_encode to set the blob ?!
  			echo json_encode(array('status'=>'success'));
  			 
@@ -116,7 +125,8 @@ class Board extends CI_Controller {
  		$this->db->trans_begin();
  		//lock the user in match table
  		$match = $this->match_model->getExclusive($user->match_id);			
- 			
+ 		
+		//get msg from the other user
  		if ($match->user1_id == $user->id) {
 			$msg = $match->u2_msg;
  			$this->match_model->updateMsgU2($match->id,"");
@@ -125,7 +135,7 @@ class Board extends CI_Controller {
  			$msg = $match->u1_msg;
  			$this->match_model->updateMsgU1($match->id,"");
  		}
-
+		
  		if ($this->db->trans_status() === FALSE) {
  			$errormsg = "Transaction error";
  			goto transactionerror;
@@ -144,5 +154,47 @@ class Board extends CI_Controller {
 		echo json_encode(array('status'=>'failure','message'=>$errormsg));
  	}
  	
+	function getClickon(){
+	/*
+		//Communicate with database, get game_baord info... coming soon
+ 			$this->load->model('user_model');
+ 			$this->load->model('match_model');
+			
+ 			$user = $_SESSION['user'];
+ 			$user = $this->user_model->getExclusive($user->login);
+			//lock the user in user table
+			//If status is not playing,cant post message
+ 			if ($user->user_status_id != User::PLAYING) {	
+				$errormsg="Not in PLAYING state";
+ 				goto error;
+ 			}
+ 			
+ 			$match = $this->match_model->get($user->match_id);			
+ 			//Get the msg
+ 			$msg = $this->input->post('game_board');
+
+ 			if ($match->user1_id == $user->id)  {
+				//Clear msg in database
+ 				$msg = $match->u1_msg == ''? $msg :  $match->u1_msg . "\n" . $msg;
+ 				$this->match_model->updateMsgU1($match->id, $msg);
+ 			}
+ 			else {//if user is user 2
+				//Clear msg in database
+ 				$msg = $match->u2_msg == ''? $msg :  $match->u2_msg . "\n" . $msg;
+ 				$this->match_model->updateMsgU2($match->id, $msg);
+ 			}
+			
+ 			//create json data "status: success", and send it to view			! We might use json_encode to set the blob ?!
+ 			echo json_encode(array('status'=>'success'));
+ 			 
+ 			return;
+		
+ 		$errormsg="Missing argument";
+ 		
+		error:
+			echo json_encode(array('status'=>'failure','message'=>$errormsg));
+		
+	*/	
+	}
  }
 
