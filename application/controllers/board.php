@@ -155,7 +155,6 @@ class Board extends CI_Controller {
  	}
  	
 	function getClickon(){
-	/*
 		//Communicate with database, get game_baord info... coming soon
  			$this->load->model('user_model');
  			$this->load->model('match_model');
@@ -170,18 +169,18 @@ class Board extends CI_Controller {
  			}
  			
  			$match = $this->match_model->get($user->match_id);			
- 			//Get the msg
- 			$msg = $this->input->post('game_board');
+ 			//Get the game_board 
+ 			$game_board = $this->input->post('game_board');
 
  			if ($match->user1_id == $user->id)  {
-				//Clear msg in database
- 				$msg = $match->u1_msg == ''? $msg :  $match->u1_msg . "\n" . $msg;
- 				$this->match_model->updateMsgU1($match->id, $msg);
+ 				$this->match_model->updateBorad($match->id, $game_board);
  			}
  			else {//if user is user 2
-				//Clear msg in database
+				/*
  				$msg = $match->u2_msg == ''? $msg :  $match->u2_msg . "\n" . $msg;
  				$this->match_model->updateMsgU2($match->id, $msg);
+				*/
+				$this->match_model->updateBorad($match->id, $game_board);
  			}
 			
  			//create json data "status: success", and send it to view			! We might use json_encode to set the blob ?!
@@ -194,7 +193,6 @@ class Board extends CI_Controller {
 		error:
 			echo json_encode(array('status'=>'failure','message'=>$errormsg));
 		
-	*/	
 	}
  }
 
