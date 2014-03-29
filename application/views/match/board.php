@@ -54,15 +54,13 @@
 				});	
 				
 			$('#container').click(function(){
+				$('[name=game_board]').val(game_board);
 				if($('[name=game_board]').val()!=""){
 					var arguments = $('[name=game_board]').serialize();
 					var url = "<?= base_url() ?>board/getClickon";
-					$.post(url,arguments, function (data,textStatus,jqXHR){
-						$('[name=game_board]').val(game_board);
-						});
+					$.post(url,arguments );
 					return false;
 				}else{
-						$('[name=game_board]').val(game_board);
 				}
 			});	
 			
@@ -122,18 +120,6 @@
 				id: col * 7 + row,
 			  });	
 			  circleGroup.add(empty_spot);	
-			  /*
-			  			$('form').submit(function(){
-				var arguments = $(this).serialize();
-				var url = "<.?= base_url() ?>board/postMsg";
-				$.post(url,arguments, function (data,textStatus,jqXHR){
-						var conversation = $('[name=conversation]').val();
-						var msg = $('[name=msg]').val();
-						$('[name=conversation]').val(conversation + "\n" + user + ": " + msg);
-						});
-				return false;
-				});	
-			  */
 			  
 			  //Send row and col to controller, controller check if it is valid, if it is send back json
 			  
