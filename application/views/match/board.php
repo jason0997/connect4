@@ -15,8 +15,9 @@
 		var otherUser = "<?= $otherUser->login ?>";
 		var user = "<?= $user->login ?>";
 		var status = "<?= $status ?>";
+		var game_board;
 		$(function(){
-			$('body').everyTime(2000,function(){
+			$('body').everyTime(1000,function(){
 					if (status == 'waiting') {
 						$.getJSON('<?= base_url() ?>arcade/checkInvitation',function(data, text, jqZHR){
 								if (data && data.status=='rejected') {
@@ -39,6 +40,98 @@
 								$('[name=conversation]').val(conversation + "\n" + otherUser + ": " + msg);
 						}
 					});
+
+					var url = "<?= base_url() ?>board/getBoard";
+					$.getJSON(url, function (data,text,jqXHR){
+						if (data && data.status=='success') {
+							game_board=(data.game_board);
+							$('[name=game_board]').val(game_board);
+						}
+					});
+					
+					var user_color_id = <?= $user_color_id?>;
+					  var color = ['white', 'red', 'yellow'];
+					  var mouseover_enable = true;	
+					  
+					  var stage = new Kinetic.Stage({
+						container: 'container',
+						width: 900,
+						height: 500,
+					  });
+					  var layer = new Kinetic.Layer();
+					  var circleGroup = new Kinetic.Group({});
+						  
+					  var rect = new Kinetic.Rect({
+						x: 50,
+						y: 10,
+						width: 800,
+						height: 480,
+						fill: '#000099',
+						stroke: 'black',
+						strokeWidth: 4
+					  });
+					  
+					  for(col=0;col<7;col=col+1){
+						  for(row=0;row<6;row=row+1){
+							(
+							 function(){  var empty_spot = new Kinetic.Circle({
+								x: col*100+ 150,
+								y: row*80 + 50,
+								radius: 30,
+								fill: color[game_board[col*6+row]],
+								stroke: 'black',
+								strokeWidth: 1,
+								id: col * 6 + row,
+							  });	
+							  circleGroup.add(empty_spot);	
+										  
+							  empty_spot.on('click', function(evt){
+								 select_num = empty_spot.id();
+								col_num = parseInt(select_num / 6);
+								for(col_num_row =5;col_num_row>=0;col_num_row--){
+									if(game_board[col_num*6+col_num_row] == 0){
+										row_num = col_num_row;
+										break;
+									}else if(col_num_row == 0){
+										row_num = -1;
+									}					
+								}
+								if(row_num !=-1){										
+									game_board[col_num*6+row_num] = user_color_id;
+									$('[name=game_board]').val(game_board);									
+								//circleGroup.get('#' + (col_num*6+row_num))[0].setFill(color[game_board[col_num*6+row_num]]);					
+								}else{
+									alert("This column is unavailable!");
+								}
+								layer.draw();
+							});	
+							
+				
+							})();	
+						  }	  		  
+					  }	  
+					  
+					  // add the shape to the layer
+					  layer.add(rect);
+					  layer.add(circleGroup);
+					  
+				
+							circleGroup.on('mouseover', function() {
+								   if(mouseover_enable){
+									document.body.style.cursor = 'pointer';
+								   }else{
+									document.body.style.cursor = 'default';
+								   }
+							});
+							circleGroup.on('mouseout', function() {
+								  document.body.style.cursor = 'default';
+							});
+						
+				
+					  // add the layer to the stage
+					  stage.add(layer);	
+	  
+					
 			});
 
 			$('form').submit(function(){
@@ -49,16 +142,16 @@
 						var msg = $('[name=msg]').val();						
 						$('[name=conversation]').val(conversation + "\n" + user + ": " + msg);
 						});
-
 				return false;
 				});	
 				
 			$('#container').click(function(){
-				$('[name=game_board]').val(game_board);
 				if($('[name=game_board]').val()!=""){
+					//game_board_array=($('[name=game_board]').val()).split(',');
+					
 					var arguments = $('[name=game_board]').serialize();
-					var url = "<?= base_url() ?>board/getClickon";
-					$.post(url,arguments );
+					var url = "<?= base_url() ?>board/postBoard";
+					$.post(url,arguments);
 					return false;
 				}else{
 				}
@@ -73,7 +166,14 @@
 	<div>
 	Hello <?= $user->fullName() ?>  <?= anchor('account/logout','(Logout)') ?>  
 	</div>
-	
+	<div>
+	Your color is <?php echo $x = $user_color_id == 1? 'red' :  'yellow';?>
+	<?php 
+		if($user_color_id != 1 && $user_color_id != 2){
+			header("Refresh:0");	
+		}
+	?>
+	</div>
 	<div id='status'> 
 	<?php 
 		if ($status == "playing")
@@ -83,100 +183,18 @@
 	?>
 	</div>
 		<div id="container"  style="background:grey; width:900px;height:500px">
-	<script>
-	var game_board = new Array();
-	game_board = eval("<?php echo json_encode($game_board)?>");
-	$('[name=game_board]').val(game_board);
-	  var color = ['white', 'red', 'yellow'];
-	  var	  mouseover_enable = true;
-	  
-      var stage = new Kinetic.Stage({
-        container: 'container',
-        width: 900,
-        height: 500,
-      });
-      var layer = new Kinetic.Layer();
-	  var circleGroup = new Kinetic.Group({});
-		  
-      var rect = new Kinetic.Rect({
-        x: 50,
-        y: 10,
-        width: 800,
-        height: 480,
-        fill: '#000099',
-        stroke: 'black',
-        strokeWidth: 4
-      });
-	  for(col=0;col<7;col=col+1){
-		  for(row=0;row<6;row=row+1){
-			(
-			 function(){  var empty_spot = new Kinetic.Circle({
-				x: col*100+ 150,
-				y: row*80 + 50,
-				radius: 30,
-				fill: color[game_board[col][row]],
-				stroke: 'black',
-				strokeWidth: 1,
-				id: col * 7 + row,
-			  });	
-			  circleGroup.add(empty_spot);	
-			  
-			  //Send row and col to controller, controller check if it is valid, if it is send back json
-			  
-			  empty_spot.on('click', function(evt){
-				 select_num = empty_spot.id();
-				col_num = parseInt(select_num / 7);
-				for(col_num_row =5;col_num_row>=0;col_num_row--){
-					if(game_board[col_num][col_num_row] == 0){
-						row_num = col_num_row;
-						break;
-					}else if(col_num_row == 0){
-						row_num = -1;
-					}					
-				}
-				if(row_num !=-1){
-										
-					game_board[col_num][row_num] = 1;
-					circleGroup.get('#' + (col_num*7+row_num))[0].setFill(color[game_board[col_num][row_num]]);					
-				}else{
-					alert("This column is unavailable!");
-				}
-				layer.draw();
-				//alert("select_num: " + select_num + "cl_num" + col_num + "row_num" + row_num);
-			});	
-			
-
-			})();	
-		  }	  		  
-	  }	  
-	  
-      // add the shape to the layer
-      layer.add(rect);
-	  layer.add(circleGroup);
-	  
-
-			circleGroup.on('mouseover', function() {
-				   if(mouseover_enable){
-				  	document.body.style.cursor = 'pointer';
-				   }else{
-					document.body.style.cursor = 'default';
-				   }
-			});
-			circleGroup.on('mouseout', function() {
-				  document.body.style.cursor = 'default';
-			});
+<br>
 		
+	<script>
 
-      // add the layer to the stage
-      stage.add(layer);	
-	  
+
 
 	</script>
 	</div>
 	<br/>
 	
 <?php 
-		$att =  array('id'=>'game_board');
+	$att =  array('id'=>'game_board');
 	echo form_open(NULL,$att);
 	echo form_textarea('game_board');
 	echo form_close();

@@ -26,7 +26,7 @@ class Board extends CI_Controller {
 			//get update user info
 	    	$user = $this->user_model->get($user->login);
 	    	$invite = $this->invite_model->get($user->invite_id);
-
+			$user_color_id = 0;
 			//Waiting for other user, get information of the other user.
 	    	if ($user->user_status_id == User::WAITING) {
 	    		$invite = $this->invite_model->get($user->invite_id);
@@ -35,10 +35,14 @@ class Board extends CI_Controller {
 			//Playing with other user, get information of other user accordingly.
 	    	else if ($user->user_status_id == User::PLAYING) {			
 	    		$match = $this->match_model->get($user->match_id);
-	    		if ($match->user1_id == $user->id)
+	    		if ($match->user1_id == $user->id){
 	    			$otherUser = $this->user_model->getFromId($match->user2_id);
-	    		else
+					$user_color_id = 1;
+				}
+	    		else{
 	    			$otherUser = $this->user_model->getFromId($match->user1_id);
+					$user_color_id = 2;
+				}
 	    	}
 	    	
 	    	$data['user']=$user;
@@ -54,15 +58,21 @@ class Board extends CI_Controller {
 	    			break;
 	    	}
 		$game_board = array();
-		$game_board_row = array();
-		for($i = 0; $i < 7; $i = $i + 1){
-			for($j = 0; $j < 6; $j = $j + 1){				
-				$game_board_row[$j] = 0; 
-			}
-			array_push($game_board, $game_board_row);
+		for($i = 0; $i < 42; $i = $i + 1){
+			$game_board[$i]=0;
 		}
 		
-		$data['game_board'] = $game_board;		
+		
+		$data['user_color_id'] = $user_color_id;
+		$data['game_board'] = $game_board;	
+	//	$game_board_string = NULL;
+		var_dump($user_color_id);
+		if(isset($match) && $match->board_state == ""){
+//			$game_board_string= join(',', $game_board);
+			$game_board_serialize= serialize($game_board);
+			$this->match_model->updateBorad($match->id, $game_board_serialize);
+		}
+		
 		$this->load->view('match/board',$data);
     }
 
@@ -154,7 +164,7 @@ class Board extends CI_Controller {
 		echo json_encode(array('status'=>'failure','message'=>$errormsg));
  	}
  	
-	function getClickon(){
+	function postBoard(){
 		//Communicate with database, get game_baord info... coming soon
  			$this->load->model('user_model');
  			$this->load->model('match_model');
@@ -171,19 +181,15 @@ class Board extends CI_Controller {
  			$match = $this->match_model->get($user->match_id);			
  			//Get the game_board 
  			$game_board = $this->input->post('game_board');
-
- 			if ($match->user1_id == $user->id)  {
- 				$this->match_model->updateBorad($match->id, $game_board);
- 			}
- 			else {//if user is user 2
-				/*
- 				$msg = $match->u2_msg == ''? $msg :  $match->u2_msg . "\n" . $msg;
- 				$this->match_model->updateMsgU2($match->id, $msg);
-				*/
-				$this->match_model->updateBorad($match->id, $game_board);
- 			}
+				$game_board_temp = explode("%2C",$game_board);
+				$game_board_temp2 = explode(",",$game_board_temp[0]);
+				for($i=0;$i <42; $i = $i + 1){
+					$game_board_array[$i] = $game_board_temp2[$i];
+				}
+			$game_board_serialize = serialize($game_board_array);
 			
- 			//create json data "status: success", and send it to view			! We might use json_encode to set the blob ?!
+			$this->match_model->updateBorad($match->id,$game_board_serialize);
+			
  			echo json_encode(array('status'=>'success'));
  			 
  			return;
@@ -194,5 +200,43 @@ class Board extends CI_Controller {
 			echo json_encode(array('status'=>'failure','message'=>$errormsg));
 		
 	}
+	
+	function getBoard() {
+ 		$this->load->model('user_model');
+ 		$this->load->model('match_model');
+ 			
+ 		$user = $_SESSION['user'];
+ 		 
+ 		$user = $this->user_model->get($user->login);
+ 		if ($user->user_status_id != User::PLAYING) {	
+ 			$errormsg="Not in PLAYING state";
+ 			goto error;
+ 		}
+ 		// start transactional mode  
+ 		$this->db->trans_begin();
+ 		//lock the user in match table
+ 		$match = $this->match_model->getExclusive($user->match_id);			
+ 		
+			$game_board_unserialize = $match->board_state;
+			$game_board = unserialize($game_board_unserialize);
+ 			//$this->match_model->updateBoard($match->id,"");
+		
+ 		if ($this->db->trans_status() === FALSE) {
+ 			$errormsg = "Transaction error";
+ 			goto transactionerror;
+ 		}
+ 		
+ 		// if all went well commit changes
+ 		$this->db->trans_commit();
+ 		
+ 		echo json_encode(array('status'=>'success','game_board'=>$game_board));
+		return;
+		
+		transactionerror:
+		$this->db->trans_rollback();
+		
+		error:
+		echo json_encode(array('status'=>'failure','message'=>$errormsg));
+ 	}
  }
 
