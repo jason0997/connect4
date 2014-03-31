@@ -11,11 +11,11 @@
 	<script src="<?= base_url() ?>/js/jquery.timers.js"></script>
 	
 	<script>
-		
 		var otherUser = "<?= $otherUser->login ?>";
 		var user = "<?= $user->login ?>";
 		var status = "<?= $status ?>";
 		var game_board;
+		var turn_counter;
 		$(function(){
 			$('body').everyTime(1000,function(){
 					if (status == 'waiting') {
@@ -50,18 +50,18 @@
 					});
 					
 					var user_color_id = <?= $user_color_id?>;
-					  var color = ['white', 'red', 'yellow'];
-					  var mouseover_enable = true;	
+					var color = ['white', 'red', 'yellow'];
+					var mouseover_enable = true;	
 					  
-					  var stage = new Kinetic.Stage({
+					var stage = new Kinetic.Stage({
 						container: 'container',
 						width: 900,
 						height: 500,
-					  });
-					  var layer = new Kinetic.Layer();
-					  var circleGroup = new Kinetic.Group({});
+					});
+					var layer = new Kinetic.Layer();
+					var circleGroup = new Kinetic.Group({});
 						  
-					  var rect = new Kinetic.Rect({
+					var rect = new Kinetic.Rect({
 						x: 50,
 						y: 10,
 						width: 800,
@@ -69,24 +69,28 @@
 						fill: '#000099',
 						stroke: 'black',
 						strokeWidth: 4
-					  });
-					  
-					  for(col=0;col<7;col=col+1){
-						  for(row=0;row<6;row=row+1){
-							(
-							 function(){  var empty_spot = new Kinetic.Circle({
+					});
+
+					for(col=0;col<7;col=col+1){
+					  for(row=0;row<6;row=row+1){
+						(function()
+							{
+								var empty_spot = new Kinetic.Circle({
 								x: col*100+ 150,
 								y: row*80 + 50,
 								radius: 30,
+								//color the circle according to the number 
+								//retrived from the gameboard[] data.
 								fill: color[game_board[col*6+row]],
 								stroke: 'black',
 								strokeWidth: 1,
 								id: col * 6 + row,
-							  });	
-							  circleGroup.add(empty_spot);	
+							});	
+
+							circleGroup.add(empty_spot);	
 										  
-							  empty_spot.on('click', function(evt){
-								 select_num = empty_spot.id();
+							empty_spot.on('click', function(evt){
+								select_num = empty_spot.id();
 								col_num = parseInt(select_num / 6);
 								for(col_num_row =5;col_num_row>=0;col_num_row--){
 									if(game_board[col_num*6+col_num_row] == 0){
@@ -96,9 +100,23 @@
 										row_num = -1;
 									}					
 								}
-								if(row_num !=-1){										
-									game_board[col_num*6+row_num] = user_color_id;
-									$('[name=game_board]').val(game_board);									
+								if(row_num !=-1){
+									turn_counter = counter_nonzero(game_board); 
+									//alert(turn_counter);
+									if((turn_counter % 2 == 0 && user_color_id == 1) ||
+										(turn_counter % 2 == 1 && user_color_id == 2)){										
+										//alert("color changed");
+										game_board[col_num*6+row_num] = user_color_id;
+										$('[name=game_board]').val(game_board);
+										//alert($('[name=game_board]').val());
+										//alert("send value");
+										var arguments = $('[name=game_board]').serialize();
+										//alert("serialized success");
+										var url = "<?= base_url() ?>board/postBoard";
+										//alert(arguments);
+										$.post(url,arguments);
+										return false;
+									}									
 								//circleGroup.get('#' + (col_num*6+row_num))[0].setFill(color[game_board[col_num*6+row_num]]);					
 								}else{
 									alert("This column is unavailable!");
@@ -144,20 +162,41 @@
 						});
 				return false;
 				});	
-				
+			/*	
 			$('#container').click(function(){
-				if($('[name=game_board]').val()!=""){
-					//game_board_array=($('[name=game_board]').val()).split(',');
-					
-					var arguments = $('[name=game_board]').serialize();
-					var url = "<?= base_url() ?>board/postBoard";
-					$.post(url,arguments);
-					return false;
+				alert("click?");
+				var turn_counter = counter_nonzero(game_board); 
+				alert("send?");
+				if((turn_counter % 2 == 0 && user_color_id == 1) ||(turn_counter % 2 == 1 && user_color_id == 2)){	
+					if($('[name=game_board]').val()!=""){
+						alert("send value");
+						var arguments = $('[name=game_board]').serialize();
+						var url = "<?= base_url() ?>board/postBoard";
+						$.post(url,arguments);
+						return false;
+					}else{
+
+					}
 				}else{
+
 				}
-			});	
+			});	*/
 			
 		});
+
+		function counter_nonzero(game_board){
+			var count_num = 0;
+			//alert("in the function");
+			for (var i = 0; i < 42; i += 1){
+				//alert(game_board[i]);
+				if(game_board[i] != 0){
+					count_num += 1;
+					//alert("ffikkkdsklfjdskl");
+				} 
+			}
+
+			return count_num;
+		}
 	
 	</script>
 	</head> 
