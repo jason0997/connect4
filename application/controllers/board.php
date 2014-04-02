@@ -66,7 +66,6 @@ class Board extends CI_Controller {
 		$data['user_color_id'] = $user_color_id;
 		$data['game_board'] = $game_board;	
 	//	$game_board_string = NULL;
-		var_dump($user_color_id);
 		if(isset($match) && $match->board_state == ""){
 //			$game_board_string= join(',', $game_board);
 			$game_board_serialize= serialize($game_board);
@@ -238,5 +237,73 @@ class Board extends CI_Controller {
 		error:
 		echo json_encode(array('status'=>'failure','message'=>$errormsg));
  	}
+	function checkWinner(){
+
+		$this->load->model('user_model');
+		$this->load->model('match_model');
+			
+		$user = $_SESSION['user'];
+		$user = $this->user_model->getExclusive($user->login);
+			//lock the user in user table
+			//If status is not playing,cant post message
+		if ($user->user_status_id != User::PLAYING) {	
+			$errormsg="Not in PLAYING state";
+			goto error;
+		}
+ 			
+ 			$match = $this->match_model->get($user->match_id);			
+ 			$winner_id = $this->input->post('winner_id');
+
+ 			if ($winner_id == 1)  {
+				$this->match_model->updateStatus($match->id, Match::U1WON);
+				
+ 			}else if($winner_id==2){
+				$this->match_model->updateStatus($match->id, Match::U2WON);
+			}else{
+ 				$this->match_model->updateStatus($match->id,  Match::TIE);
+ 			}
+			//$this->user_model->updateStatus($user->id,User::AVAILABLE);
+			//$this->user_model->updateStatus($other_user,User::AVAILABLE);
+ 			
+			echo json_encode(array('status'=>'success'));
+ 			 
+ 			return;
+			
+ 		$errormsg="Missing argument";
+ 		
+		error:
+			echo json_encode(array('status'=>'failure','message'=>$errormsg));		
+	}
+	
+	function checkStatus(){
+
+		$this->load->model('user_model');
+		$this->load->model('match_model');
+			
+		$user = $_SESSION['user'];
+		$user = $this->user_model->getExclusive($user->login);
+			//lock the user in user table
+			//If status is not playing,cant post message
+		if ($user->user_status_id != User::PLAYING) {	
+			$errormsg="Not in PLAYING state";
+			goto error;
+		}
+ 			
+		$match = $this->match_model->get($user->match_id);			
+
+		if($match->match_status_id != Match :: ACTIVE){	
+			$this->user_model->updateStatus($user->id,User::AVAILABLE);
+			echo json_encode(array('status'=>'success' , 'game_status'=>'over'));
+			return;
+		}
+ 			
+ 		$errormsg="Missing argument";
+ 		
+		error:
+			echo json_encode(array('status'=>'failure','message'=>$errormsg));		
+	}
+	
+
+
  }
 
